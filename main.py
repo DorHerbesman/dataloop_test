@@ -28,8 +28,9 @@ def get_links(url, level):
 def search_images(url, max_level):
     primary_links = get_links(url, 0)
 
-
+    max_level = int(max_level)
     for level, link in list(primary_links.values()):
+        print(link, level)
         valid = validators.url(link)
         if valid:
              if level <= max_level:
@@ -53,5 +54,5 @@ def search_images(url, max_level):
     return dict_to_return
 
 if __name__ == '__main__':
-    val = input('please enter url and depth seperated by space ').split(' ',2)
-    print(search_images('https://www.geeksforgeeks.org/',3))
+    url, depth = input('please enter url and depth seperated by space ').split(' ',2)
+    print(search_images(url, depth))
