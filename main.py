@@ -1,11 +1,8 @@
 import requests as rq
-import os
 from bs4 import *
-from urllib.parse import urljoin
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import validators
 import time
+from urllib.parse import urlparse
 
 
 def get_links(url, level):
@@ -24,35 +21,49 @@ def get_links(url, level):
 
     return links
 
+def uri_validator(x):
+    try:
+        result = urlparse(x)
+        return all([result.scheme, result.netloc])
+    except:
+        return False
 
 def search_images(url, max_level):
-    primary_links = get_links(url, 0)
-
     max_level = int(max_level)
-    for level, link in list(primary_links.values()):
-        print(link, level)
-        valid = validators.url(link)
-        if valid:
-             if level <= max_level:
-                level += 1
-                links = get_links(link, level)
-                for new_link in links:
-                    if new_link not in primary_links:
-                        primary_links[new_link] = [level, new_link]
+    primary_links = {'links': []}
+    primary_links['links'].append([0, url])
 
-    dict_to_return = {}
+    i = 0
+    while (i < len(list(primary_links['links']))):
+            arr = primary_links['links'][i]
+            link = arr[1]
+            level = arr[0]
+            val = uri_validator(link)
+            if val:
+                if level < max_level:
+                    level += 1
+                    links = get_links(link, level)
+                    for new_link in links:
+                        if new_link not in primary_links['links']:
+                            temp_dict = {level, new_link}
+                            primary_links['links'].append(list(temp_dict))
+            i += 1;
 
-    for level, link in primary_links.values():
-        valid = validators.url(link)
+    dict_to_return = {'results': []}
+
+    for level, link in primary_links['links']:
+        valid = validators.url(str(link))
         if valid:
             r = rq.get(link)
             soup = BeautifulSoup(r.text, "html.parser")
             images = soup.findAll('img')
             for image in images:
-                dict_to_return['results'] = {'imageUrl: ': image, 'sourceUrl: ': link, 'depth: ': level}
+                temp_dict = {'imageUrl': image['src'], 'sourceUrl': link, 'depth': level}
+                dict_to_return['results'].append(temp_dict)
 
     return dict_to_return
 
+
 if __name__ == '__main__':
-    url, depth = input('please enter url and depth seperated by space ').split(' ',2)
+    url, depth = input('please enter url and depth seperated by space ').split(' ', 2)
     print(search_images(url, depth))
